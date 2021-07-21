@@ -1,3 +1,3 @@
 # C++ TicTacToe
 
-Nothing gets you started like a TicTacToe game.
+Nothing gets you started like a TicTacToe game
