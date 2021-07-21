@@ -30,10 +30,8 @@ bool is_legal(char pos) {
 
 void comp_moves() {
     char comp_pos;
-    while (1) {
-        comp_pos = rand() % 9;
-        if (!is_legal(comp_pos)) continue;
-        break;
+    while (!is_legal((comp_pos = rand() % 9))) {
+        continue;
     }
     board[comp_pos] = 'O';
     human_to_move = !human_to_move;
