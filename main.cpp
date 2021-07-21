@@ -1,6 +1,7 @@
 #include <iostream>
 #include <ctime>
 #include <cctype>
+#include <limits>
 
 using std::cout;
 using std::cin;
@@ -9,7 +10,7 @@ char board[9] = {' ', ' ', ' ',
                  ' ', ' ', ' ',
                  ' ', ' ', ' '};
 
-bool playing = false;
+bool game_initialised = false;
 bool human_to_move = false;
 bool tutorial_done = false;
 int input = -1;
@@ -23,11 +24,15 @@ void print_board() {
     cout << " " << board[6] << " " << "|" << " " << board[7] << " " << "|" << " " << board[8] << " " << "\n";
 }
 
+bool is_legal(char pos) {
+    return board[pos] == ' ';
+}
+
 void comp_moves() {
     char comp_pos;
-    for (;;) {
+    while (1) {
         comp_pos = rand() % 9;
-        if (board[comp_pos] != ' ') continue;
+        if (!is_legal(comp_pos)) continue;
         break;
     }
     board[comp_pos] = 'O';
@@ -42,14 +47,12 @@ void decide_who_starts() {
         human_to_move = true;
         cout << "\nIt looks like you're moving first :O\n";
     }
-    playing = true;
+    game_initialised = true;
 }
 
-
-//Use char for pos to be cool
 void make_move(char pos) {
     pos--;
-    if (board[pos] != ' ') {
+    if (!is_legal(pos)) {
         cout << "That position is taken. Try again.\n";
     } else {
         board[pos] = 'X';
@@ -58,12 +61,12 @@ void make_move(char pos) {
 }
 
 char take_input() {
-    for (;;) {
-        cin >> input;
-        if (1 > input || input > 9) {
+    while (1) {
+        if (!(cin >> input) || 1 > input || input > 9) {
             print_board();
             cout << "Invalid input. Enter a number between 1 and 9.\n";
-            input = -1;
+            cin.clear();
+            cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             continue;
         }
         return input;
@@ -101,28 +104,29 @@ void announce_winner() {
 void ask_for_repeat() {
     char answer;
     cout << "Would you like to play again? (y/n)\n";
-    for (;;) {
+    while (1) {
         cin >> answer;
         answer = tolower(answer);
         if (answer == 'y') {
-            playing = false;
+            game_initialised = false;
             for (int i = 0; i < 9; ++i) {
                 board[i] = ' ';
             }
             break;
         } else if (answer == 'n') {
             exit(0);
+        } else {
+            cout << "Please enter valid input (y/n)\n";
         }
     }
 }
 
 bool check_stalemate() {
     for (int i = 0; i < 8; ++i) {
-        if (board[i] == ' ') {
+        if (is_legal(i)) {
             return false;
         }
     }
-    print_board();
     return true;
 }
 
@@ -131,7 +135,7 @@ int main() {
     cout << "Welcome to a really cool C++ TicTacToe game :O\n";
     cout << "I will try to beat you!!! Watch out\n";
     while (true) {
-        if (!playing) {
+        if (!game_initialised) {
             decide_who_starts();
         }
         if (!tutorial_done) {
@@ -147,7 +151,7 @@ int main() {
             announce_winner();
             ask_for_repeat();
         }
-        if (check_stalemate()) {
+        if (check_stalemate() && game_initialised) {
             cout << "STALEMATE!!!!\n";
             ask_for_repeat();
         }
