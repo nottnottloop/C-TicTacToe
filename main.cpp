@@ -2,6 +2,9 @@
 #include <ctime>
 #include <cctype>
 #include <limits>
+#include <vector>
+#include <algorithm>
+#include <stdint.h>
 
 using std::cout;
 using std::cin;
@@ -13,8 +16,11 @@ char board[9] = {' ', ' ', ' ',
 bool game_initialised = false;
 bool human_to_move = false;
 bool tutorial_done = false;
-int input = -1;
+
 char winner;
+
+int wins = 0;
+int losses = 0;
 
 void print_board() {
     cout << " " << board[0] << " " << "|" << " " << board[1] << " " << "|" << " " << board[2] << " " << "\n";
@@ -24,43 +30,129 @@ void print_board() {
     cout << " " << board[6] << " " << "|" << " " << board[7] << " " << "|" << " " << board[8] << " " << "\n";
 }
 
-bool is_legal(char pos) {
+bool is_legal(short pos) {
     return board[pos] == ' ';
 }
 
+bool check_win(char check, bool testing = false) {
+        // Horizontal
+        if (board[0] == check && board[1] == check && board[2] == check || board[3] == check && board[4] == check && board[5] == check || board[6] == check && board[7] == check && board[8] == check) {
+            if (!testing) winner = check;
+            return true;
+        }
+        // Vertical
+        if (board[0] == check && board[3] == check && board[6] == check || board[1] == check && board[4] == check && board[7] == check || board[2] == check && board[5] == check && board[8] == check) {
+            if (!testing) winner = check;
+            return true;
+        }
+        // Diagonal
+        if (board[0] == check && board[4] == check && board[8] == check || board[2] == check && board[4] == check && board[6] == check) {
+            if (!testing) winner = check;
+            return true;
+        }
+    return false;
+}
+
 void comp_moves() {
-    char comp_pos;
-    while (!is_legal((comp_pos = rand() % 9))) {
-        continue;
+    short comp_pos;
+    bool position_found = false;
+    // while (!is_legal((comp_pos = rand() % 9))) {
+    //     continue;
+    // }
+    
+    // First, check if the comp can win on the next turn
+    if (!position_found) {
+        int i = 0;
+        while (!position_found && i++ != 9) {
+            char temp = board[i];
+            board[i] = 'O';
+            if (check_win('O', true) && is_legal(i)) {
+                position_found = true;
+                comp_pos = i;
+            }
+            board[i] = temp;
+        }
     }
+    // Then, see if the comp can block the player from winning
+    if (!position_found) {
+        int i = 0;
+        while (!position_found && i++ != 9) {
+            char temp = board[i];
+            board[i] = 'O';
+            if (check_win('X', true) && is_legal(i)) {
+                position_found = true;
+                comp_pos = i;
+            }
+            board[i] = temp;
+        }
+    }
+
+    // Finally, target the center, the corners and then sides in that order
+    // Center
+    if (!position_found) {
+        if (is_legal(4)) {
+            position_found = true;
+            comp_pos = 4;
+        }
+    }
+
+    // Corners
+    if (!position_found) {
+        std::vector<int> possible_positions;
+        for (int i = 0; i < 9; i += 2) {
+            if (is_legal(i)) {
+                possible_positions.push_back(i);
+                position_found = true;
+            }
+        }
+        if (position_found) {
+            std::random_shuffle(possible_positions.begin(), possible_positions.end());
+            comp_pos = possible_positions[0];
+        }
+    }
+
+    // Sides
+    if (!position_found) {
+        std::vector<int> possible_positions;
+        for (int i = 1; i < 9; i += 2) {
+            if (is_legal(i)) {
+                possible_positions.push_back(i);
+                position_found = true;
+            }
+        }
+        if (position_found) {
+            std::random_shuffle(possible_positions.begin(), possible_positions.end());
+            comp_pos = possible_positions[0];
+        }
+    }
+
     board[comp_pos] = 'O';
-    human_to_move = !human_to_move;
 }
 
 void decide_who_starts() {
     if ((rand() % 2) < 1) {
-        human_to_move = false;
         cout << "\nIt has been chosen that I will move first :)\n";
     } else {
-        human_to_move = true;
         cout << "\nIt looks like you're moving first :O\n";
+        human_to_move = true;
     }
     game_initialised = true;
 }
 
-void make_move(char pos) {
+void make_move(short pos) {
     pos--;
     if (!is_legal(pos)) {
         cout << "That position is taken. Try again.\n";
     } else {
         board[pos] = 'X';
-        human_to_move = !human_to_move;
     }
 }
 
 char take_input() {
+    short input = -1;
     while (1) {
-        if (!(cin >> input) || 1 > input || input > 9) {
+        cin >> input;
+        if (cin.fail() || 1 > input || input > 9) {
             print_board();
             cout << "Invalid input. Enter a number between 1 and 9.\n";
             cin.clear();
@@ -71,31 +163,24 @@ char take_input() {
     }
 }
 
-bool check_win(char check) {
-        // Horizontal
-        if (board[0] == check && board[1] == check && board[2] == check || board[3] == check && board[4] == check && board[5] == check || board[6] == check && board[7] == check && board[8] == check) {
-            winner = check;
-            return true;
-        }
-        // Vertical
-        if (board[0] == check && board[3] == check && board[6] == check || board[1] == check && board[4] == check && board[7] == check || board[2] == check && board[5] == check && board[8] == check) {
-            winner = check;
-            return true;
-        }
-        // Diagonal
-        if (board[0] == check && board[4] == check && board[8] == check || board[2] == check && board[4] == check && board[6] == check) {
-            winner = check;
-            return true;
-        }
-    return false;
-}
-
 void announce_winner() {
     print_board();
     if (winner == 'O') {
         cout << "Hahaha! I won!!! Better luck next time, pal\n";
     } else {
         cout << "Crikey, you won! Aw jeez...\n";
+    }
+}
+
+void print_wins_and_losses() {
+    cout << "You have won " << wins << " times, you have lost " << losses << " times.\n";
+}
+
+void increment_win_or_loss() {
+    if (winner == 'X') {
+        wins++;
+    } else {
+        losses++;
     }
 }
 
@@ -130,8 +215,8 @@ bool check_stalemate() {
 
 int main() {
     srand(static_cast<unsigned int>(time(0)));
-    cout << "Welcome to a really cool C++ TicTacToe game :O\n";
-    cout << "I will try to beat you!!! Watch out\n";
+    cout << "\nWelcome to a really cool C++ TicTacToe game :O\n";
+    cout << "I will try to beat you!!! I have a mega advanced AI, so watch out\n";
     while (true) {
         if (!game_initialised) {
             decide_who_starts();
@@ -147,11 +232,16 @@ int main() {
         else comp_moves();
         if (check_win('X') || check_win('O')) {
             announce_winner();
+            increment_win_or_loss();
+            print_wins_and_losses();
             ask_for_repeat();
         }
         if (check_stalemate() && game_initialised) {
+            print_board();
             cout << "STALEMATE!!!!\n";
+            print_wins_and_losses();
             ask_for_repeat();
         }
+        human_to_move = !human_to_move;
     }
 }
